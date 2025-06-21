@@ -1,0 +1,78 @@
+services:
+  unit3d:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: unit3d
+    volumes:
+      - .:/var/www/html
+    environment:
+      # Application Configuration
+      - APP_NAME=UNIT3D
+      - APP_ENV=production
+      - APP_KEY=GENERATED_ON_FIRST_RUN
+      - APP_DEBUG=false
+      - APP_URL=http://localhost
+
+      # Database Connection
+      - DB_CONNECTION=mysql
+      - DB_HOST=db
+      - DB_PORT=3306
+      - DB_DATABASE=unit3d
+      - DB_USERNAME=unit3d
+      - DB_PASSWORD=CHANGE_THIS <<<<< THIS IS IMPORTANT
+
+      # Redis Connection
+      - REDIS_HOST=redis
+      - REDIS_PASSWORD=null
+      - REDIS_PORT=6379
+
+      # Mail Configuration (Example using mailtrap)
+      - MAIL_MAILER=smtp
+      - MAIL_HOST=smtp.mailtrap.io
+      - MAIL_PORT=2525
+      - MAIL_USERNAME=
+      - MAIL_PASSWORD=
+      - MAIL_FROM_ADDRESS="hello@example.com"
+      - MAIL_FROM_NAME="${APP_NAME}"
+    depends_on:
+      - db
+      - redis
+    networks:
+      - unit3d-internal
+      - nginx-expose
+    # The application runs on port 9000 (PHP-FPM).
+    # Your external Nginx Proxy Manager should be configured to proxy pass to 'unit3d:9000'.
+    # ports:
+    #  - "9000:9000"
+
+  db:
+    image: mysql:5.7
+    container_name: unit3d-db
+    command: --default-authentication-plugin=mysql_native_password
+    restart: unless-stopped
+    environment:
+      - MYSQL_ROOT_PASSWORD=rootsecretpassword
+      - MYSQL_DATABASE=unit3d
+      - MYSQL_USER=unit3d
+      - MYSQL_PASSWORD=secretpassword
+    volumes:
+      - db-data:/var/lib/mysql
+    networks:
+      - unit3d-internal
+
+  redis:
+    image: redis:alpine
+    container_name: unit3d-redis
+    restart: unless-stopped
+    networks:
+      - unit3d-internal
+
+volumes:
+  db-data:
+
+networks:
+  unit3d-internal:
+    driver: bridge
+  nginx-expose:
+    external: true
